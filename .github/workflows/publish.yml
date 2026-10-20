@@ -1,0 +1,121 @@
+name: Publish Skills
+
+on:
+  schedule:
+    # 14:50 UTC is 6:50 AM PST / 7:50 AM PDT
+    - cron: '50 14 * * 1'
+  workflow_dispatch: {}
+
+permissions: {}
+
+concurrency:
+  group: publish-skills
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      id-token: write # Required for npm OIDC provenance when enabled
+
+    steps:
+      - name: Generate GitHub App token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app-token
+        with:
+          app-id: ${{ vars.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }},modern-web-guidance
+          permission-contents: write
+          permission-issues: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: # zizmor: ignore[artipacked] publish-skills.ts pushes the release commit and tag using this persisted App token
+          ref: main
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - name: Check for changes since last release
+        id: check-changes
+        run: |
+          if git describe --exact-match --match "v*" HEAD >/dev/null 2>&1; then
+            echo "Error: The latest commit already has a version tag. No new changes to publish."
+            exit 1
+          fi
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          credentials_json: ${{ secrets.GCP_EVALS_COLLECTOR_SA_KEY }}
+
+      - name: Collect latest evaluation results from GCS
+        id: collect-evals
+        continue-on-error: true
+        run: pnpm run collect-evals
+
+      - name: Handle eval collection fallback on failure
+        if: steps.collect-evals.outcome != 'success'
+        run: |
+          echo "::warning title=Eval Collection Skipped::Evaluation collection or regression test failed. Discarding uncommitted summary and proceeding with previous stable eval data."
+          echo "### ⚠️ Evaluation Collection Skipped" >> $GITHUB_STEP_SUMMARY
+          echo "Evaluation collection or regression tests encountered an issue. Discarding changes to \`eval-results-summary.json\` and proceeding with publish using previous data." >> $GITHUB_STEP_SUMMARY
+          git checkout -- src/build/eval-results-summary.json || true
+
+      - name: Build distribution
+        run: pnpm run build
+
+      - name: Verify installation with install-skills test
+        env:
+          FULL: 1
+          TEST_REPORTER: spec
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: node --test src/cli/install-skills.test.ts
+
+
+
+      - name: Configure Git for Auth and Commit
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Rewrite SSH to HTTPS using the App token for the target repo
+          git config --global url."https://x-access-token:${APP_TOKEN}@github.com/".insteadOf "git@github.com:"
+
+      - name: Publish Skills to GitHub (modern-web-guidance)
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: pnpm run publish-skills
+
+      - name: Publish to npm via OIDC Provenance
+        run: |
+          cd dist/skills-cli
+          npm publish --provenance --access public --registry https://registry.npmjs.org/
+
+      - name: Notify on failure
+        if: failure() && steps.check-changes.outcome != 'failure'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          gh issue create \
+            --title "Publish Skills workflow failed (run #$GITHUB_RUN_NUMBER)" \
+            --assignee "TravenReese,micahjo7,paulirish" \
+            --body "The [Publish Skills workflow run]($RUN_URL) failed."$'\n\n'"cc @TravenReese @micahjo7 @paulirish"
