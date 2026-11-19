@@ -189,6 +189,9 @@
   "column-span": [
     "css"
   ],
+  "column-wrap": [
+    "css"
+  ],
   "conic-gradients": [
     "css"
   ],
@@ -329,8 +332,14 @@
   "display-ruby": [
     "css"
   ],
+  "display-state": [
+    "css"
+  ],
   "display-table": [
     "css"
+  ],
+  "document-isolation-policy": [
+    "security"
   ],
   "dominant-baseline": [
     "css"
@@ -847,6 +856,9 @@
   "rem": [
     "css"
   ],
+  "resizable": [
+    "css"
+  ],
   "resize": [
     "css"
   ],
@@ -933,6 +945,9 @@
     "scrolling"
   ],
   "scroll-snap-events": [
+    "scrolling"
+  ],
+  "scroll-snap-type-pair": [
     "scrolling"
   ],
   "scroll-target-group": [
