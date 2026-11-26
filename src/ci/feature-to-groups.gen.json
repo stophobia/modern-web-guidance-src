@@ -189,6 +189,9 @@
   "column-span": [
     "css"
   ],
+  "column-wrap": [
+    "css"
+  ],
   "conic-gradients": [
     "css"
   ],
@@ -329,8 +332,14 @@
   "display-ruby": [
     "css"
   ],
+  "display-state": [
+    "css"
+  ],
   "display-table": [
     "css"
+  ],
+  "document-isolation-policy": [
+    "security"
   ],
   "dominant-baseline": [
     "css"
@@ -351,6 +360,9 @@
     "css"
   ],
   "exp-functions": [
+    "css"
+  ],
+  "field-content": [
     "css"
   ],
   "field-sizing": [
@@ -390,6 +402,9 @@
     "css"
   ],
   "float-clear": [
+    "css"
+  ],
+  "flow-start-flow-end": [
     "css"
   ],
   "focus-visible": [
@@ -558,6 +573,9 @@
     "css"
   ],
   "hyphenate-limit-chars": [
+    "css"
+  ],
+  "hyphenate-limit-lines": [
     "css"
   ],
   "hyphens": [
@@ -829,6 +847,9 @@
   "random-function": [
     "css"
   ],
+  "random-item": [
+    "css"
+  ],
   "rcap": [
     "css"
   ],
@@ -845,6 +866,9 @@
     "css"
   ],
   "rem": [
+    "css"
+  ],
+  "resizable": [
     "css"
   ],
   "resize": [
@@ -933,6 +957,9 @@
     "scrolling"
   ],
   "scroll-snap-events": [
+    "scrolling"
+  ],
+  "scroll-snap-type-pair": [
     "scrolling"
   ],
   "scroll-target-group": [
@@ -1050,6 +1077,9 @@
     "css"
   ],
   "text-decoration": [
+    "css"
+  ],
+  "text-decoration-inset": [
     "css"
   ],
   "text-decoration-line-blink": [
@@ -1307,6 +1337,9 @@
   "white-space-collapse": [
     "css"
   ],
+  "white-space-trim": [
+    "css"
+  ],
   "widows-orphans": [
     "css"
   ],
@@ -1329,6 +1362,9 @@
     "css"
   ],
   "word-spacing": [
+    "css"
+  ],
+  "wrap-inside": [
     "css"
   ],
   "writing-mode": [
